@@ -5,7 +5,6 @@ import random
 
 import httpx as httpx
 import websockets.client
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import make_aware
 
 from Coloring import yellow, magenta, green, red, cyan
@@ -48,8 +47,16 @@ class KuCoin:
         await self.connect('https://api.kucoin.com/api/v1/bullet-public')
         uri = self.uri + f"?token={self.token}&connectId=welcome"
         print("Starting Socket ...", end=" ")
-        self.socket = await websockets.client.connect(uri)
-        print(green('(Socket started)'))
+
+        async def doing():
+            try:
+                self.socket = await websockets.client.connect(uri)
+            except Exception as e:
+                print(f"{red(str(e))}, {yellow('Retrying Socket')}")
+                await doing()
+
+        await doing()
+        print(green('Socket started'))
 
         asyncio.create_task(self.ping_pong())
         pairs = Pair.objects.all()
@@ -100,7 +107,6 @@ class KuCoin:
             if data['subject'] == "trade.snapshot":
                 data = data['data']['data']
 
-                pair = Pair()
                 try:
                     pair = await Pair.objects.aget(currency=data['baseCurrency'], base=data['quoteCurrency'])
                     pair.price = data['lastTradedPrice']
