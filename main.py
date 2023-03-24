@@ -1,9 +1,12 @@
 import asyncio
+import os
 
-from KuCoin import KuCoin
+import django
 
 
 async def main():
+    from KuCoin import KuCoin
+
     process = await asyncio.create_subprocess_shell(r"python manage.py runserver")
     await asyncio.sleep(2)
     print('##############################')
@@ -22,4 +25,6 @@ async def main():
 
 
 if __name__ == '__main__':
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CryptoWatcher.settings')
+    django.setup()
     asyncio.run(main())

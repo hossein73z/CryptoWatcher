@@ -101,3 +101,12 @@ class KuCoin:
             "response": True
         })
         await self.send(sub)
+
+    def pair_string(self, pairs: dict):
+        pair_str = ','.join(
+            [
+                f"{pair['currency'].upper()}-{pair['base'].upper()},{pair['base'].upper()}-{pair['currency'].upper()}"
+                for pair in pairs
+            ]
+        )
+        return pair_str
