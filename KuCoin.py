@@ -7,6 +7,7 @@ import httpx as httpx
 import websockets.client
 
 from Coloring import yellow, magenta, green, red, cyan
+from priceWatcher.models import Pair
 
 
 class KuCoin:
@@ -49,6 +50,9 @@ class KuCoin:
         print(green('(Socket started)'))
 
         asyncio.create_task(self.ping_pong())
+        pairs = Pair.objects.all()
+        pair_string = await self.pair_string(pairs)
+        await self.subscribe(['market', 'snapshot'], pair_string)
 
         async for message in self.socket:
             try:
@@ -92,21 +96,20 @@ class KuCoin:
             if data['id'] == self.ping_id:
                 self.ping_is_ponged = True
 
-    async def subscribe(self, currency: str = None, base: str = None):
+    async def subscribe(self, topic: list[str], value: str, id: int = random.randrange(100000, 1000000)):
 
         sub = json.dumps({
-            "id": 1545910660739,
+            "id": id,
             "type": "subscribe",
-            "topic": "/market/snapshot:BTC-ETH",
+            "topic": f"/{'/'.join(topic)}:{value}",
             "response": True
         })
         await self.send(sub)
 
-    def pair_string(self, pairs: dict):
-        pair_str = ','.join(
-            [
-                f"{pair['currency'].upper()}-{pair['base'].upper()},{pair['base'].upper()}-{pair['currency'].upper()}"
-                for pair in pairs
-            ]
-        )
+    @staticmethod
+    async def pair_string(pairs):
+        pair_str = ','.join([
+            f"{pair.currency.upper()}-{pair.base.upper()},{pair.base.upper()}-{pair.currency.upper()}"
+            async for pair in pairs
+        ])
         return pair_str

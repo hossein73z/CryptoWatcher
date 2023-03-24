@@ -18,10 +18,6 @@ async def main():
 
     while True:
         input_data = await loop.run_in_executor(None, input)
-        if input_data == "123":
-            await kucoin.subscribe()
-        else:
-            await kucoin.send(input_data)
 
 
 if __name__ == '__main__':
