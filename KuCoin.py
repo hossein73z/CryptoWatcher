@@ -92,11 +92,12 @@ class KuCoin:
             if data['id'] == self.ping_id:
                 self.ping_is_ponged = True
 
-    async def price_subscribe(self):
+    async def subscribe(self, currency: str = None, base: str = None):
+
         sub = json.dumps({
             "id": 1545910660739,
             "type": "subscribe",
-            "topic": "/market/ticker:BTC-USDT,ETH-USDT",
-            "privateChannel": False,
+            "topic": "/market/snapshot:BTC-ETH",
             "response": True
         })
+        await self.send(sub)
