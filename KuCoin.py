@@ -5,6 +5,8 @@ import random
 
 import httpx as httpx
 import websockets.client
+from asgiref.sync import async_to_sync, sync_to_async
+from django.utils.timezone import make_aware
 
 from Coloring import yellow, magenta, green, red, cyan
 from priceWatcher.models import Pair
@@ -56,8 +58,7 @@ class KuCoin:
 
         async for message in self.socket:
             try:
-                print("New Data Received ---> " + magenta(message))
-                self.message_analyze(message)
+                await self.message_analyze(message)
                 await asyncio.sleep(interval)
             except websockets.ConnectionClosed:
                 continue
@@ -90,11 +91,33 @@ class KuCoin:
         await asyncio.sleep(self.pingInterval)
         await self.ping_pong()
 
-    def message_analyze(self, message: str):
+    async def message_analyze(self, message: str):
         data = json.loads(message)
         if data['type'] == "pong":
             if data['id'] == self.ping_id:
                 self.ping_is_ponged = True
+        elif data['type'] == "message":
+            if data['subject'] == "trade.snapshot":
+                data = data['data']['data']
+
+                print('******************************')
+                print(f"New Pair Update: {data['baseCurrency']}/{data['quoteCurrency']}")
+                try:
+                    pair = await Pair.objects.aget(currency=data['baseCurrency'], base=data['quoteCurrency'])
+                    pair.currency = data['baseCurrency']
+                    pair.base = data['quoteCurrency']
+                    pair.price = data['lastTradedPrice']
+                    pair.price_date = make_aware(datetime.datetime.now())
+
+                    print(cyan('******************************'))
+                    self.loop.run_in_executor(None, pair.save)
+
+                except Exception as e:
+                    print(e)
+                print(red('******************************'))
+
+        else:
+            print("New Data Received ---> " + magenta(message))
 
     async def subscribe(self, topic: list[str], value: str, id: int = random.randrange(100000, 1000000)):
 
