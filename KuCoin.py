@@ -1,24 +1,29 @@
 import asyncio
+import datetime
 import json
+import random
 
 import httpx as httpx
 import websockets.client
 
-from Coloring import yellow, magenta, green, red
+from Coloring import yellow, magenta, green, red, cyan
 
 
 class KuCoin:
     socket = None
     token = None
+    pingInterval = 0
+    ping_is_ponged = False
 
-    def __init__(self, uri: str):
+    def __init__(self, uri: str, loop=asyncio.get_event_loop()):
+        self.ping_id = 0
         self.uri = uri
-        self.__listening: asyncio.Task
+        self.loop = loop
         self.socket: websockets.client.Connection
         self.token: str
 
     async def connect(self, url: str):
-        print(magenta(f'Connecting to ') + url)
+        print(f'Connecting to ' + url, end=" ")
         try:
             async with httpx.AsyncClient() as client:
                 r = await client.post(url)
@@ -26,7 +31,8 @@ class KuCoin:
                     result = json.loads(r.text)
                     self.token = result['data']['token']
                     self.uri = result['data']['instanceServers'][0]['endpoint']
-                    print(green('Connection Successful'))
+                    self.pingInterval = result['data']['instanceServers'][0]['pingInterval'] / 1000
+                    print(green('(Connection Successful)'))
                 else:
                     print(red(str(r)))
                     raise httpx.ConnectTimeout("Manual Raise")
@@ -38,24 +44,59 @@ class KuCoin:
     async def start_listening(self, interval: float = 0):
         await self.connect('https://api.kucoin.com/api/v1/bullet-public')
         uri = self.uri + f"?token={self.token}&connectId=welcome"
-        print(magenta("Starting Socket ..."))
+        print("Starting Socket ...", end=" ")
         self.socket = await websockets.client.connect(uri)
-        print(green('Socket started'))
+        print(green('(Socket started)'))
+
+        asyncio.create_task(self.ping_pong())
 
         async for message in self.socket:
             try:
                 print("New Data Received ---> " + magenta(message))
+                self.message_analyze(message)
                 await asyncio.sleep(interval)
             except websockets.ConnectionClosed:
                 continue
 
     async def send(self, data: str):
-        print(f"Sending New Data: " + data)
         try:
             await self.socket.send(data)
-            print(green(f"Data Sent Successfully: ") + data)
         except websockets.ConnectionClosedError as e:
             print(red(str(e)))
 
+    async def ping_pong(self):
+        self.ping_id = str(random.randrange(100000, 1000000))
+        print(yellow('Pinging ... '), end=" ")
+        await self.send(json.dumps({"id": self.ping_id, "type": "ping"}))
+        print(green('(Pinged)'))
+        self.ping_is_ponged = False
+
+        start = datetime.datetime.now()
+        while not self.ping_is_ponged:
+            await asyncio.sleep(1)
+            now = datetime.datetime.now()
+            if (now - start).seconds == 10:
+                break
+
+        if self.ping_is_ponged:
+            print(cyan("Ping, Ponged.") + f" Next ping in {self.pingInterval} seconds.")
+        else:
+            print(red("Ping did not ponged. Sending new ping"))
+
+        await asyncio.sleep(self.pingInterval)
+        await self.ping_pong()
+
+    def message_analyze(self, message: str):
+        data = json.loads(message)
+        if data['type'] == "pong":
+            if data['id'] == self.ping_id:
+                self.ping_is_ponged = True
+
     async def price_subscribe(self):
-        pass
+        sub = json.dumps({
+            "id": 1545910660739,
+            "type": "subscribe",
+            "topic": "/market/ticker:BTC-USDT,ETH-USDT",
+            "privateChannel": False,
+            "response": True
+        })
