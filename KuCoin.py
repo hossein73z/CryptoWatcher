@@ -5,7 +5,7 @@ import random
 
 import httpx as httpx
 import websockets.client
-from asgiref.sync import async_to_sync, sync_to_async
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import make_aware
 
 from Coloring import yellow, magenta, green, red, cyan
@@ -100,21 +100,30 @@ class KuCoin:
             if data['subject'] == "trade.snapshot":
                 data = data['data']['data']
 
-                print('******************************')
-                print(f"New Pair Update: {data['baseCurrency']}/{data['quoteCurrency']}")
+                pair = Pair()
                 try:
                     pair = await Pair.objects.aget(currency=data['baseCurrency'], base=data['quoteCurrency'])
-                    pair.currency = data['baseCurrency']
-                    pair.base = data['quoteCurrency']
                     pair.price = data['lastTradedPrice']
                     pair.price_date = make_aware(datetime.datetime.now())
 
-                    print(cyan('******************************'))
                     self.loop.run_in_executor(None, pair.save)
 
+                except Pair.DoesNotExist:
+                    pass
+                except Pair.DoesNotExist as e:
+                    print(red(e))
+
+                try:
+                    pair = await Pair.objects.aget(currency=data['quoteCurrency'], base=data['baseCurrency'])
+                    pair.price = 1 / float(data['lastTradedPrice'])
+                    pair.price_date = make_aware(datetime.datetime.now())
+
+                    self.loop.run_in_executor(None, pair.save)
+
+                except Pair.DoesNotExist:
+                    pass
                 except Exception as e:
-                    print(e)
-                print(red('******************************'))
+                    print(red(e))
 
         else:
             print("New Data Received ---> " + magenta(message))
