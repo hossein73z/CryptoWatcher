@@ -25,7 +25,7 @@ class KuCoin:
         self.token: str
 
     async def connect(self, url: str):
-        print(bright('KuCoin ---> ') + f'Connecting to ' + url)
+        print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + f'Connecting to ' + url)
         try:
             async with httpx.AsyncClient() as client:
                 r = await client.post(url)
@@ -34,29 +34,31 @@ class KuCoin:
                     self.token = result['data']['token']
                     self.uri = result['data']['instanceServers'][0]['endpoint']
                     self.pingInterval = result['data']['instanceServers'][0]['pingInterval'] / 1000
-                    print(bright('KuCoin ---> ') + green('(Connection Successful)'))
+                    print(
+                        bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + green('Connection Successful'))
                 else:
-                    print(bright('KuCoin ---> ') + red(str(r)))
+                    print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + red(str(r)))
                     raise httpx.ConnectTimeout("Manual Raise")
         except httpx.ConnectTimeout as e:
-            print(bright('KuCoin ---> ') + red(str(e)))
-            print(bright('KuCoin ---> ') + yellow("Reconnecting ..."))
+            print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + red(str(e)))
+            print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + yellow("Reconnecting ..."))
             await self.connect(url)
 
     async def start_listening(self, interval: float = 0):
         await self.connect('https://api.kucoin.com/api/v1/bullet-public')
         uri = self.uri + f"?token={self.token}&connectId=welcome"
-        print(bright('KuCoin ---> ') + "Starting Socket ...")
+        print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + "Starting Socket ...")
 
         async def doing():
             try:
                 self.socket = await websockets.client.connect(uri, ping_interval=None)
-            except Exception as e:
-                print(bright('KuCoin ---> ') + f"{red(str(e))}, {yellow('Retrying Socket')}")
+            except Exception as error:
+                print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ')
+                      + f"{red(str(error))}, {yellow('Retrying Socket')}")
                 await doing()
 
         await doing()
-        print(bright('KuCoin ---> ') + green('Socket started'))
+        print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + green('Socket started'))
 
         asyncio.create_task(self.ping_pong())
         pairs = Pair.objects.all()
@@ -75,7 +77,7 @@ class KuCoin:
         try:
             await self.socket.send(data)
         except websockets.ConnectionClosedError as e:
-            print(bright('KuCoin ---> ') + red(str(e)))
+            print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + red(str(e)))
 
     async def ping_pong(self):
         self.ping_id = str(random.randrange(100000, 1000000))
@@ -90,9 +92,11 @@ class KuCoin:
                 break
 
         if self.ping_is_ponged:
-            print(bright('KuCoin ---> ') + cyan("Ping, Ponged.") + f" Next ping in {self.pingInterval} seconds.")
+            print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + cyan(
+                "Ping, Ponged.") + f" Next ping in {self.pingInterval} seconds.")
         else:
-            print(bright('KuCoin ---> ') + red("Ping did not ponged. Sending new ping"))
+            print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + red(
+                "Ping did not ponged. Sending new ping"))
 
         await asyncio.sleep(self.pingInterval)
         await self.ping_pong()
@@ -116,7 +120,7 @@ class KuCoin:
                 except Pair.DoesNotExist:
                     pass
                 except Pair.DoesNotExist as e:
-                    print(bright('KuCoin ---> ') + red(e))
+                    print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + red(e))
 
                 try:
                     pair = await Pair.objects.aget(currency=data['quoteCurrency'], base=data['baseCurrency'])
@@ -128,10 +132,12 @@ class KuCoin:
                 except Pair.DoesNotExist:
                     pass
                 except Exception as e:
-                    print(bright('KuCoin ---> ') + red(e))
+                    print(bright(f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + red(e))
 
         else:
-            print(bright('KuCoin ---> ') + "Unhandled Message Received ---> " + magenta(message))
+            print(bright(
+                f'KuCoin ({yellow(datetime.datetime.now())}) ---> ') + "Unhandled Message Received ---> " + magenta(
+                message))
 
     async def subscribe(self, topic: list[str], value: str, id: int = random.randrange(100000, 1000000)):
 

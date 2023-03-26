@@ -1,5 +1,4 @@
 import asyncio
-from asyncio import CancelledError
 
 from django.core.management import BaseCommand
 
@@ -12,5 +11,6 @@ class Command(BaseCommand):
         try:
             kucoin = KuCoin('wss://ws.postman-echo.com/raw')
             asyncio.run(kucoin.start_listening())
-        except (KeyboardInterrupt, CancelledError) as e:
+        except Exception as e:
             print(red(str(e)))
+            self.handle()

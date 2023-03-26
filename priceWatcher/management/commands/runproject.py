@@ -1,6 +1,5 @@
 import os
 import signal
-import time
 from subprocess import Popen
 from sys import stdin, stdout, stderr
 
@@ -25,7 +24,7 @@ class Command(BaseCommand):
 
         try:
             while True:
-                time.sleep(10)
+                pass
         except KeyboardInterrupt:
             for proc in proc_list:
                 os.kill(proc.pid, signal.SIGILL)
