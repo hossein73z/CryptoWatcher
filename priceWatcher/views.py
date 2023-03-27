@@ -1,6 +1,9 @@
-from django.shortcuts import render, redirect
+import json
 
-from CryptoWatcher.functions.Coloring import red, bright, green
+from django.shortcuts import render, redirect
+from django.http import HttpResponse, Http404, JsonResponse
+
+from CryptoWatcher.functions.Coloring import red, green
 from priceWatcher.models import Pair
 
 
@@ -11,19 +14,28 @@ def pair_list(request):
 
 
 def new_pair(request):
-    return render(request, 'new_pair.html', {})
+
+    with open("CryptoWatcher/statics/all_symbols.json", "r") as f:
+        symbols = f.read()
+        symbols = json.loads(symbols)
+        symbols.sort()
+
+    return render(request, 'new_pair.html', {'symbols': symbols})
 
 
 def add_pair(request):
-    data = request.GET.dict()
+    pair = request.GET.dict()['currency'].split("-")
+
+    currency = pair[0]
+    base = pair[1]
 
     try:
-        Pair.objects.get(currency=data['currency'].upper(), base=data['base'].upper())
+        Pair.objects.get(currency=currency.upper(), base=base.upper())
         print(red("Already Exists"))
     except Pair.DoesNotExist:
         pair = Pair()
-        pair.currency = data['currency'].upper()
-        pair.base = data['base'].upper()
+        pair.currency = currency.upper()
+        pair.base = base.upper()
         pair.save()
         print(green("New Pair Added"))
     except Exception as e:
@@ -31,3 +43,22 @@ def add_pair(request):
 
     pairs: list[Pair] = Pair.objects.all().values()
     return redirect('/pair_list', {'pairs': pairs})
+
+
+def kucoin_symbols(request):
+    pair_str = request.GET['pair']
+
+    symbols = []
+    with open("CryptoWatcher/statics/all_symbols.json", "r") as f:
+        symbols = f.read()
+        symbols = json.loads(symbols)
+        start = [v for v in symbols if v.startswith(pair_str)]
+        start.sort()
+        rest = [v for v in symbols if (pair_str in v) and (not v.startswith(pair_str))]
+        rest.sort()
+        symbols = start + rest
+
+    if symbols:
+        return JsonResponse(symbols, safe=False)
+    else:
+        return JsonResponse(None, safe=False)

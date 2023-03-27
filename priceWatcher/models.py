@@ -10,6 +10,7 @@ class Pair(models.Model):
     base = models.TextField(null=False)
     price = models.FloatField(null=False, default=0)
     price_date = models.DateTimeField(null=False, default=make_aware(datetime.datetime.now()))
+    subscribed = models.BooleanField(null=False, default=False)
 
     class Meta:
         db_table = 'pairs'

@@ -7,12 +7,11 @@ from django.core.management import BaseCommand
 
 
 class Command(BaseCommand):
-    help = 'Run all commands'
     commands = [
         'python manage.py runKuCoin',
-        'python manage.py runserver'
-
+        'python manage.py runserver',
     ]
+    help = 'Run all commands'
 
     def handle(self, *args, **options):
         proc_list = []
