@@ -1,5 +1,7 @@
 My app to monitor cryptocurrency coin and token prices and set alert for them.
-**Warning**: It's soooo far from completion or even version 1. So do not use it.
+For now, you can add new crypto pairs to database and watch price on your browser
+
+install requirements and run `python manage.py runproject`
 
 Used **Django** for web interface, **websockets** for connecting to KuCoin API (Binance is not accessible in my region) and async coroutines to make these work together.
 
