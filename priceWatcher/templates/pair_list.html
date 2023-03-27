@@ -44,7 +44,6 @@
     <body>
 
         <table class="styled-table">
-
             <thead>
             <tr>
                 <th>ID</th>
@@ -56,24 +55,41 @@
 
             <tbody>
             {% for pair in pairs %}
-                <tr>
+                <tr id="pair:{{ pair.id }}">
                     <td>{{ pair.id }}</td>
                     <td>{{ pair.currency }}/{{ pair.base }}</td>
-                    <td>{{ pair.price }}</td>
-                    <td>{{ pair.price_date }}</td>
+                    <td id="price:{{ pair.id }}">{{ pair.price }}</td>
+                    <td id="date:{{ pair.id }}">{{ pair.price_date|date:'H:i:s' }}</td>
                 </tr>
             {% endfor %}
             <tr>
-                <td>
-                    +
-                </td>
-                <td colspan="3">
-                    <a href="new/">Add New Pair</a>
-                </td>
+                <td>+</td>
+                <td colspan="3"><a href="new/">Add New Pair</a></td>
             </tr>
             </tbody>
-
         </table>
+        <script>
+
+            function update_price() {
+
+                let xhttp = new XMLHttpRequest();
+                xhttp.onload = function () {
+                    let response = JSON.parse(xhttp.responseText);
+                    if (response != null) {
+                        for (let index in response) {
+                            let item = response[index];
+                            document.getElementById('price:' + item['id']).innerText = item['price'];
+                            document.getElementById('date:' + item['id']).innerText = item['date']
+                        }
+                    }
+                }
+                xhttp.open("GET", "/pair_list/prices_json", false)
+                xhttp.send()
+            }
+
+            setInterval(update_price, 1000)
+
+        </script>
 
     </body>
 </html>

@@ -14,7 +14,6 @@ def pair_list(request):
 
 
 def new_pair(request):
-
     with open("CryptoWatcher/statics/all_symbols.json", "r") as f:
         symbols = f.read()
         symbols = json.loads(symbols)
@@ -60,5 +59,19 @@ def kucoin_symbols(request):
 
     if symbols:
         return JsonResponse(symbols, safe=False)
+    else:
+        return JsonResponse(None, safe=False)
+
+
+def prices(request):
+    pairs = Pair.objects.all()
+
+    if pairs:
+        pair_dicts = []
+        for pair in pairs:
+            date = f"{pair.price_date.hour}:{pair.price_date.minute}:{pair.price_date.second}"
+            pair_dicts.append({'id': pair.id, 'price': pair.price, 'date': date})
+
+        return JsonResponse(pair_dicts, safe=False)
     else:
         return JsonResponse(None, safe=False)

@@ -6,5 +6,6 @@ urlpatterns = [
     path('', views.pair_list, name="pair_list"),
     path('new/', views.new_pair, name="new_pair"),
     path('add/', views.add_pair, name="add_pair"),
-    path('adding/', views.kucoin_symbols, name="kucoin_symbols")
+    path('adding/', views.kucoin_symbols, name="kucoin_symbols"),
+    path("prices_json/", views.prices, name="prices_json")
 ]
