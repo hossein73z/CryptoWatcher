@@ -13,15 +13,6 @@ def pair_list(request):
     return render(request, 'pair_list.html', {'pairs': pairs})
 
 
-def new_pair(request):
-    with open("CryptoWatcher/statics/all_symbols.json", "r") as f:
-        symbols = f.read()
-        symbols = json.loads(symbols)
-        symbols.sort()
-
-    return render(request, 'new_pair.html', {'symbols': symbols})
-
-
 def add_pair(request):
     pair = request.GET.dict()['currency'].split("-")
 

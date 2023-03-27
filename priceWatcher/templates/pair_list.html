@@ -62,12 +62,26 @@
                     <td id="date:{{ pair.id }}">{{ pair.price_date|date:'H:i:s' }}</td>
                 </tr>
             {% endfor %}
-            <tr>
+            <tr id="add_new_pair">
                 <td>+</td>
-                <td colspan="3"><a href="new/">Add New Pair</a></td>
+                <td colspan="3"><button onclick="new_pair()" id="add_text">Add New Pair</button></td>
             </tr>
             </tbody>
         </table>
+        <div id="add_span" hidden="hidden">
+            <form action="/pair_list/add/">
+                <label for="pair"><strong>Pair Symbol:</strong></label>
+                <input type="text"
+                       placeholder="BTC-USDT"
+                       name="currency"
+                       id="pair"
+                       list="list"
+                       autocomplete="off"
+                       required>
+                <datalist id="list"></datalist>
+                <button type="submit" id="submit">Add Pair</button>
+            </form>
+        </div>
         <script>
 
             function update_price() {
@@ -79,7 +93,7 @@
                         for (let index in response) {
                             let item = response[index];
                             document.getElementById('price:' + item['id']).innerText = item['price'];
-                            document.getElementById('date:' + item['id']).innerText = item['date']
+                            document.getElementById('date:' + item['id']).innerText = item['date'];
                         }
                     }
                 }
@@ -88,6 +102,58 @@
             }
 
             setInterval(update_price, 1000)
+
+            function new_pair() {
+                let td = document.getElementById("add_text");
+                td.replaceWith(document.getElementById("add_span"));
+                td = document.getElementById("add_span");
+                td.hidden = false
+            }
+
+            function myfunc() {
+                let text_box = document.getElementById("pair");
+                let submit = document.getElementById("submit");
+                let list = document.getElementById("list");
+
+                text_box.oninput = function () {
+                    text_box.value = text_box.value.toUpperCase();
+                    if (text_box.value.length !== 0) {
+                        let xhttp = new XMLHttpRequest();
+
+                        xhttp.onload = function () {
+                            let response = JSON.parse(xhttp.responseText);
+                            if (response != null) {
+                                submit.disabled = false;
+                                list.innerHTML = "";
+
+                                for (let pair in response) {
+                                    let item = document.createElement('option');
+                                    item.value = response[pair];
+                                    item.innerText = response[pair];
+                                    list.appendChild(item);
+                                }
+
+                            } else {
+                                submit.disabled = true;
+                                list.innerHTML = null
+                            }
+                        }
+                        xhttp.open("GET", "/pair_list/adding?pair=" + this.value, false);
+                        xhttp.send();
+                    } else {
+                        list.innerHTML = null
+                    }
+
+                    submit.disabled = list.childElementCount !== 1
+                    if (list.childElementCount === 1) list.innerHTML = null
+                }
+            }
+
+            try {
+                myfunc();
+            } catch (e) {
+                alert(e);
+            }
 
         </script>
 
