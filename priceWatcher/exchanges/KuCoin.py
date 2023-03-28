@@ -7,7 +7,6 @@ from asyncio import CancelledError
 
 import httpx as httpx
 import websockets.client
-from asgiref.sync import sync_to_async
 from django.utils.timezone import make_aware
 
 from CryptoWatcher.functions.Coloring import yellow, magenta, green, red, cyan, bright

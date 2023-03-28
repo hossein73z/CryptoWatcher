@@ -66,3 +66,13 @@ def prices(request):
         return JsonResponse(pair_dicts, safe=False)
     else:
         return JsonResponse(None, safe=False)
+
+
+def delete_pair(request):
+    id = request.GET.dict()['pair_id']
+    print(id)
+    try:
+        pair = Pair.objects.get(id=id)
+        pair.delete()
+    except Exception as e:
+        print(red(str(e)))

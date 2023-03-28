@@ -50,6 +50,7 @@
                 <th>Pair</th>
                 <th>Price</th>
                 <th>Last Update</th>
+                <th>Remove</th>
             </tr>
             </thead>
 
@@ -57,14 +58,21 @@
             {% for pair in pairs %}
                 <tr id="pair:{{ pair.id }}">
                     <td>{{ pair.id }}</td>
-                    <td>{{ pair.currency }}/{{ pair.base }}</td>
+                    <td>{{ pair.currency }}<b> / </b>{{ pair.base }}</td>
                     <td id="price:{{ pair.id }}">{{ pair.price }}</td>
                     <td id="date:{{ pair.id }}">{{ pair.price_date|date:'H:i:s' }}</td>
+                    <td>
+                        <button onclick="remove_pair({{ pair.id }}, '{{ pair.currency }}-{{ pair.base }}')"
+                                id="delete:{{ pair.id }}">Remove
+                        </button>
+                    </td>
                 </tr>
             {% endfor %}
             <tr id="add_new_pair">
                 <td>+</td>
-                <td colspan="3"><button onclick="new_pair()" id="add_text">Add New Pair</button></td>
+                <td colspan="4">
+                    <button onclick="new_pair()" id="add_text">Add New Pair</button>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -77,14 +85,80 @@
                        id="pair"
                        list="list"
                        autocomplete="off"
+                       oninput="manage_datalist()"
                        required>
                 <datalist id="list"></datalist>
                 <button type="submit" id="submit">Add Pair</button>
             </form>
         </div>
         <script>
+            let text_box = document.getElementById("pair");
+            let submit = document.getElementById("submit");
+            let list = document.getElementById("list");
 
-            function update_price() {
+            function new_pair() {
+
+                let td = document.getElementById("add_text");
+                td.replaceWith(document.getElementById("add_span"));
+                td = document.getElementById("add_span");
+                td.hidden = false
+            }
+
+            function manage_datalist() {
+
+                text_box.value = text_box.value.toUpperCase();
+                if (text_box.value.length !== 0) {
+                    let xhttp = new XMLHttpRequest();
+
+                    xhttp.onload = function () {
+                        let response = JSON.parse(xhttp.responseText);
+                        if (response != null) {
+                            submit.disabled = false;
+                            list.innerHTML = "";
+
+                            for (let pair in response) {
+                                let item = document.createElement('option');
+                                item.value = response[pair];
+                                item.innerText = response[pair];
+                                list.appendChild(item);
+                            }
+
+                        } else {
+                            submit.disabled = true;
+                            list.innerHTML = null
+                        }
+                    }
+                    xhttp.open("GET", "/pair_list/adding?pair=" + text_box.value, false);
+                    xhttp.send();
+                } else {
+                    list.innerHTML = null
+                }
+
+                submit.disabled = list.childElementCount !== 1
+                if (list.childElementCount === 1) list.innerHTML = null
+
+            }
+
+            function remove_pair(id, symbol) {
+                try {
+                    let confirmed = confirm('Are you sure you want to delete the "' + symbol + '" pair from the database?');
+
+                    if (confirmed) {
+                        let xhttp = new XMLHttpRequest();
+
+                        xhttp.onload = function () {
+                            let tr = document.getElementById("pair:" + id);
+                            tr.remove();
+                        }
+                        xhttp.open("GET", "/pair_list/delete?pair_id=" + id, false);
+                        xhttp.send();
+                    }
+                } catch (e) {
+                    alert(e);
+                }
+            }
+
+            setInterval(function () {
 
                 let xhttp = new XMLHttpRequest();
                 xhttp.onload = function () {
@@ -99,61 +173,7 @@
                 }
                 xhttp.open("GET", "/pair_list/prices_json", false)
                 xhttp.send()
-            }
-
-            setInterval(update_price, 1000)
-
-            function new_pair() {
-                let td = document.getElementById("add_text");
-                td.replaceWith(document.getElementById("add_span"));
-                td = document.getElementById("add_span");
-                td.hidden = false
-            }
-
-            function myfunc() {
-                let text_box = document.getElementById("pair");
-                let submit = document.getElementById("submit");
-                let list = document.getElementById("list");
-
-                text_box.oninput = function () {
-                    text_box.value = text_box.value.toUpperCase();
-                    if (text_box.value.length !== 0) {
-                        let xhttp = new XMLHttpRequest();
-
-                        xhttp.onload = function () {
-                            let response = JSON.parse(xhttp.responseText);
-                            if (response != null) {
-                                submit.disabled = false;
-                                list.innerHTML = "";
-
-                                for (let pair in response) {
-                                    let item = document.createElement('option');
-                                    item.value = response[pair];
-                                    item.innerText = response[pair];
-                                    list.appendChild(item);
-                                }
-
-                            } else {
-                                submit.disabled = true;
-                                list.innerHTML = null
-                            }
-                        }
-                        xhttp.open("GET", "/pair_list/adding?pair=" + this.value, false);
-                        xhttp.send();
-                    } else {
-                        list.innerHTML = null
-                    }
-
-                    submit.disabled = list.childElementCount !== 1
-                    if (list.childElementCount === 1) list.innerHTML = null
-                }
-            }
-
-            try {
-                myfunc();
-            } catch (e) {
-                alert(e);
-            }
+            }, 1000)
 
         </script>
 
