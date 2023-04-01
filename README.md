@@ -1,3 +1,5 @@
+**Still In Development**
+
 My app to monitor cryptocurrency coin and token prices and set alert for them.
 For now, you can add new crypto pairs to database and watch price on your browser
 
